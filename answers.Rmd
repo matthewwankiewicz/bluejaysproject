@@ -1,0 +1,33 @@
+---
+title: "Results"
+author: "Matthew Wankiewicz"
+date: '2022-12-13'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(sjPlot)
+```
+
+## Question 1
+
+```{r model creation}
+
+```
+
+## Question 2
+
+After loading in the data, I found that there were some missing values in the `SpinRate` column. Instead of omitting them, I decided to replace them with the average spin rates in the data. After doing this, I split the data into a training and testing set and started to create models. The two types of models I focused on were logistic regression and Random Forest, since we are predicting a binary response. After trying many different variable combinations, I settled on a logistic regression model because it was able to create estimates that made sense in terms of the data, but was also able to quantify the impact of each variable on the chances of the ball being put in play.
+
+## Question 3
+
+```{r model display}
+plot_model(final_mod)
+```
+
+Of the 4 variables of interest, we have to variables where higher values lead to the chances of balls being put into play decrease, Velocity and Horizontal Break (fast pitches with more movement will lead to less balls put in play). We also see that pitches with high spin rate and induced vertical break were more likely to be put in play, although Spin Rate's impact is very small. High vertical and horizontal break also leads to an increase chance of being put in play.
+
+## Question 4
+
+I would want to look at the results with left-handed hitters included in the data as well, it's highly likely that the pitcher will end up facing a lefty and we would need to see if these results stay true or change. I would also like to see what the situation was when each pitch was being thrown, if the count was 3-0, the batter will not want to swing, but in 0-2 or 1-2, they'll have to go for anything close.
