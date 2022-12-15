@@ -2,7 +2,9 @@
 title: "Results"
 author: "Matthew Wankiewicz"
 date: '2022-12-15'
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -12,47 +14,39 @@ deploy <- read_csv("deploy.csv")
 model <- read_rds("final_model.rds")
 ```
 
-## Question 1
-
-##### Predict the chance of a pitch being put in play. Please use this model to predict the chance of each pitch in the "deploy.csv" file being put in play and return a csv with your predictions.
+## Question 1: Predict the chance of a pitch being put in play. Please use this model to predict the chance of each pitch in the "deploy.csv" file being put in play and return a csv with your predictions.
 
 ```{r model prediction}
 deploy$estimate <- predict(model, newdata = deploy,
                            type = "response")
 write_csv(deploy, "deploy.csv")
-rmarkdown::paged_table(deploy)
+deploy %>% 
+  slice(1:10) %>% 
+  knitr::kable()
 ```
 
 The `estimate` column in the `deploy.csv` file represents the estimates created by the model.
 
-## Question 2
+## Question 2: In one paragraph, please explain your process and reasoning for any decisions you made in Question 1.
 
-##### In one paragraph, please explain your process and reasoning for any decisions you made in Question 1.
+After loading in the data, I found that there were some missing values in the `SpinRate` column. Instead of omitting them, I decided to replace them with the average spin rates in the data. I then did some exploratory data analysis to get more familiar with the data. After doing this, I split the data into a training and testing set and started to create models. The two types of models I focused on were logistic regression and random forest since we are predicting a binary response. After trying the two types of models, I settled on logistic regression because it was able to create estimates that made sense and were accurate in terms of the data, but it was also able to quantify the impact of each variable. I used step-wise selection and created a model that used all four variables and interactions between `Velo` and `InducedVertBreak` as well as `HorzBreak` and `InducedVertBreak`. Before going all-in with this model, I decided to balance the `InPlay` column to see if that gave better results as roughly 70% of the column were 0's. After doing this, I fit a model with all 4 variables as the predictors with no interactions. After testing this model and comparing it to the previous model, it led to lower accuracy and lower AUC, but it increased the sensitivity and negative predictive values. I felt that this model would be better suited because along with having some better performance metrics, it made many more predictions above the 0.5 threshold compared to the previous model (1221 vs 1). While the balanced model may not have had better accuracy, its other performance metrics paired with its simplicity make it the best model to use for this research question (the step-wise model has a higher accuracy because it predicted almost all 0's, meaning it would be 72% accurate if it just predicted 0 no matter what). Throughout the creation of the models, I wanted the model to be accurate, but also simple enough that anyone could easily understand it, allowing me to convey the results to the pitcher quickly and efficiently.
 
-After loading in the data, I found that there were some missing values in the `SpinRate` column. Instead of omitting them, I decided to replace them with the average spin rates in the data. I then did some exploratory data analysis to get more familiar with the data. After doing this, I split the data into a training and testing set and started to create models. The two types of models I focused on were logistic regression and Random Forest, since we are predicting a binary response. After trying different variable combinations and models, I settled on a logistic regression model because it was able to create estimates that made sense and were accurate in terms of the data, but it was also able to quantify the impact of each variable. I used step wise regression and created a model that used all four variables and interactions between `Velo` and `InducedVertBreak` as well as `HorzBreak` and `InducedVertBreak`. Before using this model, I decided to balance the `InPlay` column to see if that gave better results as roughly 70% of the column were 0's. After doing this, I fit a model with all 4 variables as the predictors with no interactions. After testing this model and comparing it to the previous model, it led to lower accuracy and lower AUC, but it increased the sensitivity and negative predictive values. I felt that this model would be better suited because along with having better performance metrics, it made many more predictions above the 0.5 threshold compared to the previous model (1221 vs 1). While the balanced model may not have had better accuracy, its other performance metrics paired with its simplicity make it the best model to use for this research question (the step wise model has a higher accuracy because it mainly predicted 0's, meaning it would be 72% accurate if it just predicted 0 no matter what).
+## Question 3: In one or two sentences, please describe to the pitcher how these 4 variables affect the batter's ability to put the ball in play. You can also include one plot or table to show to the pitcher if you think it would help.
 
-## Question 3
-
-##### In one or two sentences, please describe to the pitcher how these 4 variables affect the batter's ability to put the ball in play. You can also include one plot or table to show to the pitcher if you think it would help.
-
-```{r model display, message=FALSE, echo=FALSE}
+```{r model display, message=FALSE, echo=FALSE, fig.align='center'}
 plot_model(model) +
   labs(title = "Balls in Play variable effects",
-       subtitle = "Red variables decrease contact probability, blue variables increase") +
-  scale_y_continuous(limits = c(0.9, 1.1))
+       subtitle = "Red variables decrease ball in play probability, blue variables increase") +
+  scale_y_continuous(limits = c(0.95, 1.05))
 ```
 
-The most important variables for limiting the chance of a ball hit in play are velocity and induced vertical break, as higher values decrease the batter's ability to put the ball in play. Higher spins rate decrease the chances but at a much lower factor while higher horizontal break increases the chance of a ball going in play.
+The most important variables for limiting the chance of a ball hit in play are velocity and induced vertical break, as higher values decrease the batter's chance of putting the ball in play. Higher spin rates decrease the chances but at a much lower factor while higher horizontal breaks increase the chance of a ball hit in play.
 
-## Question 4
+## Question 4: In one or two sentences, please describe what you would see as the next steps with your model and/or results if you were in the analyst role and had another week to work on the question posed by the pitcher.
 
-##### In one or two sentences, please describe what you would see as the next steps with your model and/or results if you were in the analyst role and had another week to work on the question posed by the pitcher.
+For the next steps, I would want to work with data that only includes swinging strikes and balls in play, or the count the pitch was thrown in, as this would give us a better idea of the impact each variable has on the ball going in play. I would also want to continue to test the model on different data sets and see if it still performs well.
 
-For next steps, I would want to work with data that only includes swinging strikes and balls in play, or the count the pitch was thrown in, as this would give us a better idea of the impact each variable has. I would also want to continue to test the model on different data sets and see if it still performs well.
-
-## Question 5
-
-##### Please include any code (R, Python, or other) you used to answer the questions. This code doesn't need to be production quality or notated.
+## Question 5: Please include any code (R, Python, or other) you used to answer the questions. This code doesn't need to be production quality or notated.
 
 All code is also contained the `models.R` file. This contains data visualization, data cleaning and model creation/testing.
 
@@ -162,9 +156,9 @@ roc(test$est_ip, test$InPlay, plot = T)
 
 ### this model is much more difficult to interpret than our initial model but
 ### it has very strong results (very high AUC). We can attempt to improve
-### upon this model using step wise selection to find a better overall model
+### upon this model using step-wise selection to find a better overall model
 
-## step wise selection (AIC)
+## step-wise selection (AIC)
 model_step <- step(model2, direction = "both")
 
 ## summary of new model
@@ -205,7 +199,7 @@ lrtest(model1, model_step)
 
 lrtest(model2, model_step)
 
-### After testing the complex and step wise models, we cannot conclude that there
+### After testing the complex and step-wise models, we cannot conclude that there
 ### is a significant difference. Therefore, we will use the simpler one.
 
 ### random forest - determine if random forest yields better results compared to
@@ -248,8 +242,8 @@ roc(test$est_ip, test$InPlay, plot = T)
 ## find important variables
 varImpPlot(rf2)
 
-### results from the logistic regression are still the best and are also the easiest
-### to interpret, will now try re-sampling the response to see if that changes results
+### results from the logistic regression are still the best, will now
+### try re-sampling the response to see if that improves results
 
 ## re-sample ------------------------------------------------------------
 set.seed(111)
@@ -275,7 +269,7 @@ test$estimate <- predict(model_samp, newdata = test,
 test <- test %>% 
   mutate(est_ip = ifelse(estimate > .5, 1, 0))
 
-## create a confusion matrix for logisitic model
+## create a confusion matrix for logistic model
 confusionMatrix(reference = as.factor(test$InPlay), as.factor(test$est_ip), positive = "1")
 
 ## ROC plot and AUC
@@ -285,7 +279,7 @@ precision(test, as.factor(InPlay), as.factor(est_ip))
 
 ### while the AUC is much lower, this model allows us to have easy to interpret 
 ### coefficients and is able to detect negative occurrences at a higher rate
-### this model will likely be better to use compared to the step wise model
+### this model will likely be better to use compared to the step-wise model
 
 ### random forest
 rf_samp <- randomForest(as.factor(InPlay) ~ ., data = over_sampled, mtry=1)
@@ -314,7 +308,7 @@ write_rds(final_model, "final_model.rds")
 ## display coefficients of final model
 
 sjPlot::plot_model(model_samp) +
-  labs(subtitle = "Variables less than 1 decrease contact probability, greater than 1 increases") +
+  labs(subtitle = "Variables less than 1 decrease ball in play probability, greater than 1 increases") +
   scale_y_continuous(limits = c(0.9, 1.1))
 
 
