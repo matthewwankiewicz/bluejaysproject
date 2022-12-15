@@ -74,7 +74,7 @@ test <- test %>%
 confusionMatrix(reference = as.factor(test$InPlay), as.factor(test$est_ip), positive = "1")
 
 
-#### while the model gives us a decent idea of the importance of each variable, 
+#### while the model gives us a good idea of the importance of each variable, 
 #### it's estimates are very low, meaning we cannot look at its ROC curve, AUC and
 #### and other performance metrics using a cutoff of 0.5
 
@@ -103,9 +103,9 @@ roc(test$est_ip, test$InPlay, plot = T)
 
 ### this model is much more difficult to interpret than our initial model but
 ### it has very strong results (very high AUC). We can attempt to improve
-### upon this model using stepwise selection to find a better overall model
+### upon this model using step wise selection to find a better overall model
 
-## stepwise selection (AIC)
+## step wise selection (AIC)
 model_step <- step(model2, direction = "both")
 
 ## summary of new model
@@ -125,6 +125,7 @@ confusionMatrix(reference = as.factor(test$InPlay), as.factor(test$est_ip), posi
 ## ROC plot and AUC
 roc(test$est_ip, test$InPlay, plot = T)
 
+precision(test, as.factor(InPlay), as.factor(est_ip))
 
 ### our new model returns identical results to the more complex model. We will
 ### use the newer model as it is easier to interpret the impact of each variable
@@ -145,7 +146,7 @@ lrtest(model1, model_step)
 
 lrtest(model2, model_step)
 
-### After testing the complex and stepwise models, we cannot conclude that there
+### After testing the complex and step wise models, we cannot conclude that there
 ### is a significant difference. Therefore, we will use the simpler one.
 
 ### random forest - determine if random forest yields better results compared to
@@ -189,12 +190,12 @@ roc(test$est_ip, test$InPlay, plot = T)
 varImpPlot(rf2)
 
 ### results from the logistic regression are still the best and are also the easiest
-### to interpret, will now try over-sampling the response to see if that changes results
+### to interpret, will now try re-sampling the response to see if that changes results
 
-## over-sample ------------------------------------------------------------
+## re-sample ------------------------------------------------------------
 set.seed(111)
-over_sampled <- ovun.sample(InPlay ~ ., data = train, method = "over",
-                            N = 7543)$data
+over_sampled <- ovun.sample(InPlay ~ ., data = train, method = "both",
+                            N = 6971)$data
 
 
 ## re-attempt fitting logistic regression and random forest models
@@ -202,10 +203,7 @@ over_sampled <- ovun.sample(InPlay ~ ., data = train, method = "over",
 
 ### logistic
 
-model_samp <- glm(InPlay ~ .^2, data = over_sampled, family = binomial())
-
-## stepwise selection (AIC)
-model_samp <- step(model_samp, direction = "both")
+model_samp <- glm(InPlay ~ ., data = over_sampled, family = binomial())
 
 ## summary of new model
 summary(model_samp)
@@ -224,8 +222,11 @@ confusionMatrix(reference = as.factor(test$InPlay), as.factor(test$est_ip), posi
 ## ROC plot and AUC
 roc(test$est_ip, test$InPlay, plot = T)
 
-### much worse result from this model, check random forest to see if its
-### results are any different
+precision(test, as.factor(InPlay), as.factor(est_ip))
+
+### while the AUC is much lower, this model allows us to have easy to interpret 
+### coefficients and is able to detect negative occurrences at a higher rate
+### this model will likely be better to use compared to the step wise model
 
 ### random forest
 rf_samp <- randomForest(as.factor(InPlay) ~ ., data = over_sampled, mtry=1)
@@ -244,18 +245,18 @@ roc(test$est_ip, test$InPlay, plot = T)
 ## find important variables
 varImpPlot(rf_samp)
 
-### we still have better results from our initial logistic regression model
-### (without oversampling), this will be the model we use to create predictions
+### we still have better results from our logistic regression model, 
+### this will be the model we use to create predictions
 
-final_model <- model_step
+final_model <- model_samp
 
 write_rds(final_model, "final_model.rds")
 
 ## display coefficients of final model
 
-sjPlot::plot_model(model_step) +
+sjPlot::plot_model(model_samp) +
   labs(subtitle = "Variables less than 1 decrease contact probability, greater than 1 increases") +
-  scale_y_continuous(limits = c(0.5, 2.25))
+  scale_y_continuous(limits = c(0.9, 1.1))
 
 
 ### prep "deploy" files -------------------------------------------------------
